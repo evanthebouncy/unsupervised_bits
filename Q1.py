@@ -56,17 +56,23 @@ class Q1(nn.Module):
         features = F.softmax(self.fea_fcs(x), dim=1)
         return features
 
+    def np_describe(self, X):
+        X = to_torch(X, "float").view(-1, self.ch, self.h, self.w)
+        return self.describe(X).detach().cpu().numpy()
+
     def entropy_loss(self, probs):
         p_yes = probs[:,0]
         p_no = probs[:,1]
         
+        # get entropy of an unnormalized p
         def ent(p):
-            p_tot = torch.sum(p)
+            # renormalise
             p = p + 1e-5
             p = p / torch.sum(p)
-            return - torch.sum(torch.log(p) * p) * p_tot
+            # get entropy
+            return - torch.sum(torch.log(p) * p)
 
-        return ent(p_yes) + ent(p_no)
+        return ent(p_yes) * torch.sum(p_yes) + ent(p_no) * torch.sum(p_no)
 
     def learn_once(self, X):
         X = to_torch(X, "float").view(-1, self.ch, self.h, self.w)
@@ -75,6 +81,19 @@ class Q1(nn.Module):
         self.opt.zero_grad()
         fea = self.describe(X)
         loss = self.entropy_loss(fea)
+        loss.backward()
+        self.opt.step()
+  
+        return loss
+
+    def learn_label_once(self, X,y):
+        X = to_torch(X, "float").view(-1, self.ch, self.h, self.w)
+        y = to_torch(y, "float")
+
+        # optimize 
+        self.opt.zero_grad()
+        fea = self.describe(X) + 1e-5
+        loss = - torch.sum(y * torch.log(fea))
         loss.backward()
         self.opt.step()
   
