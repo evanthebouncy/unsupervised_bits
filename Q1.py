@@ -30,7 +30,7 @@ class WSampler:
         if n > len(W):
             n = len(W)
         prob = np.array(W) / np.sum(W)
-        r_idx = np.random.choice(range(len(W)), size=n, replace=True, p=prob)
+        r_idx = np.random.choice(range(len(W)), size=n, replace=False, p=prob)
         return self.X[r_idx]
 
 class Q1(nn.Module):
