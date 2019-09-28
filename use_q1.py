@@ -7,7 +7,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torch.autograd import Variable
 
-from Q1 import Q1, WSampler, to_torch
+from Q1_grounded import Q1, WSampler, to_torch
 import matplotlib.pyplot as plt
 import pickle
 
@@ -20,19 +20,19 @@ def draw_split():
     (X_tr, Y_tr), (X_t, Y_t) = mnist.load_data()
     X_tr, X_t = X_tr / 255, X_t / 255
 
-    w_sampler = WSampler(X_tr, 60000 * [1])
+    w_sampler = WSampler(X_t, len(Y_t) * [1], Y_t)
     
     q1 = Q1((1,28,28)).cuda()
     q1.load('./q1.mdl')
     
-    X = w_sampler.get_sample(40)
+    X,y = w_sampler.get_sample(100)
     description = q1.np_describe(X)
     for i, des in enumerate(description):
         print (des)
         if des[0] > des[1]:
-            draw_mnist(X[i], f"drawings/T_{i}.png")
+            draw_mnist(X[i], f"drawings/{y[i]}_T_{i}.png")
         else:
-            draw_mnist(X[i], f"drawings/F_{i}.png")
+            draw_mnist(X[i], f"drawings/{y[i]}_F_{i}.png")
 
 def data_split():
     (X_tr, Y_tr), (X_t, Y_t) = mnist.load_data()
